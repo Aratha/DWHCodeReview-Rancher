@@ -54,7 +54,7 @@ class ReviewRequest(BaseModel):
 class ScriptReviewRequest(BaseModel):
     """Veritabanından nesne çekilmeden, doğrudan SQL metni ile inceleme."""
 
-    sql: str = Field(..., min_length=1)
+    sql: str = Field(..., min_length=1, max_length=200_000)
     label: str | None = Field(
         None,
         max_length=200,
@@ -91,7 +91,7 @@ class RuleCheckItem(BaseModel):
     tier: str = ""  # critical | normal
     status: str  # PASS | FAIL | NOT_APPLICABLE | UNKNOWN
     severity: str = ""
-    decision_basis: str = ""  # direct_evidence | absence_of_evidence | not_applicable
+    decision_basis: str = ""  # direct_evidence | not_applicable | "" (PASS/uygunsuzluk yok)
     description: str = ""
     line_reference: str = ""
     code_snippet: str = ""

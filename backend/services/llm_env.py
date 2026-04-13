@@ -31,6 +31,11 @@ def _bool_env(v: bool) -> str:
     return "true" if v else "false"
 
 
+def _sanitize_env_value(v: str) -> str:
+    """Prevent newline injection into .env records."""
+    return v.replace("\r", " ").replace("\n", " ").strip()
+
+
 def read_llm_snapshot() -> dict:
     s = Settings()
     return {
@@ -87,7 +92,7 @@ def merge_llm_into_dotenv(updates: dict[str, str | bool | int | None]) -> None:
             env_patch[env_upper] = str(val)
         else:
             assert isinstance(val, str)
-            env_patch[env_upper] = val
+            env_patch[env_upper] = _sanitize_env_value(val)
 
     if not env_patch and not remove_api_key:
         return

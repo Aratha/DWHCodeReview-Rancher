@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  DWH Code Review - restarts API + Vite (double-click start.bat or run .\start.ps1).
+  DWH Code Review - restarts API + Vite (run .\start.ps1 from repo root).
 
 .DESCRIPTION
   Stops listeners on 8000/5173 and project uvicorn/vite processes, then starts backend + frontend.
@@ -14,101 +14,8 @@ Set-Location $Root
 
 $Host.UI.RawUI.WindowTitle = "DWH Code Review - starting"
 
-function Stop-ProcessTree {
-    param([int]$ProcessId)
-    if ($ProcessId -le 0) { return }
-    # taskkill stderr (ör. PID yok) Stop modunda terminating olur; yut.
-    $prev = $ErrorActionPreference
-    $ErrorActionPreference = 'SilentlyContinue'
-    try {
-        & taskkill.exe /PID $ProcessId /T /F 2>&1 | Out-Null
-    } finally {
-        $ErrorActionPreference = $prev
-    }
-}
-
-function Stop-ListenersOnPort {
-    param([int]$Port)
-    try {
-        Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
-            ForEach-Object {
-                $id = [int]$_.OwningProcess
-                if ($id -gt 0) { Stop-ProcessTree -ProcessId $id }
-            }
-    } catch {
-        $raw = netstat -ano 2>$null
-        if (-not $raw) { return }
-        $lines = if ($raw -is [string]) { $raw -split "`r?`n" } else { @($raw) }
-        foreach ($line in $lines) {
-            if ($line -notmatch 'LISTENING') { continue }
-            if ($line -notmatch ":$Port\s") { continue }
-            if ($line -match '\s+(\d+)\s*$') {
-                $pidNum = [int]$Matches[1]
-                if ($pidNum -gt 0) { Stop-ProcessTree -ProcessId $pidNum }
-            }
-        }
-    }
-}
-
-function Stop-DwhProjectProcesses {
-    param([string]$ProjectRoot)
-
-    if (-not (Test-Path -LiteralPath $ProjectRoot)) { return }
-    $resolved = (Resolve-Path -LiteralPath $ProjectRoot).Path
-    $folderName = Split-Path -Leaf $resolved
-    if (-not $folderName) { return }
-
-    $escapedRoot = [regex]::Escape($resolved)
-    $escapedLeaf = [regex]::Escape($folderName)
-
-    Write-Host ""
-    Write-Host "=== Restart: cleaning old processes (ports 8000, 5173) ===" -ForegroundColor Cyan
-
-    foreach ($port in @(8000, 5173)) {
-        Stop-ListenersOnPort -Port $port
-    }
-
-    Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-        Where-Object {
-            $cmd = $_.CommandLine
-            if (-not $cmd) { return $false }
-            $n = $_.Name
-            $inProject = $cmd -match $escapedRoot
-            if (-not $inProject) {
-                $inProject = ($cmd -match $escapedLeaf) -and (
-                    ($cmd -match 'uvicorn|main:app') -or ($cmd -match 'vite|run\s+dev')
-                )
-            }
-            if (-not $inProject) { return $false }
-            if ($n -eq 'python.exe' -or $n -eq 'pythonw.exe') {
-                return $cmd -match 'uvicorn|main:app'
-            }
-            if ($n -eq 'node.exe') {
-                return $cmd -match 'vite|\\vite\.|run\s+dev'
-            }
-            return $false
-        } |
-        ForEach-Object { Stop-ProcessTree -ProcessId $_.ProcessId }
-
-    Start-Sleep -Milliseconds 600
-
-    foreach ($port in @(8000, 5173)) {
-        $still = $false
-        try {
-            $still = [bool](Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
-        } catch { }
-        if ($still) {
-            Write-Host "Warning: port $port still in use; retrying kill..." -ForegroundColor Yellow
-            Stop-ListenersOnPort -Port $port
-            Start-Sleep -Milliseconds 400
-        }
-    }
-
-    Write-Host "Cleanup done." -ForegroundColor DarkGray
-    Write-Host ""
-}
-
-Stop-DwhProjectProcesses -ProjectRoot $Root
+. "$Root\scripts\dev-stop-common.ps1"
+Stop-DwhProjectProcesses -ProjectRoot $Root -PhaseMessage "=== Başlatmadan önce eski süreçler (8000, 5173) temizleniyor ==="
 
 Write-Host "=== SQL Code Review starting ===" -ForegroundColor Cyan
 

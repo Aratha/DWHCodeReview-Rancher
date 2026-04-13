@@ -459,7 +459,7 @@ def _merge_two_part_single_rule(
             tier=tier,
             status="PASS",
             severity="",
-            decision_basis="absence_of_evidence",
+            decision_basis="",
             description="İhlal bulunmadı.",
             line_reference="",
             code_snippet="",
@@ -801,6 +801,12 @@ def _merge_rule_results(
 
             db = ""
 
+        # İhlal yokken etiket göstermemek: eski model çıktılarında absence_of_evidence boşaltılır
+
+        if db == "absence_of_evidence" and st in ("PASS", "NOT_APPLICABLE"):
+
+            db = ""
+
 
 
         desc = str(item.get("description", "") or "")
@@ -955,7 +961,7 @@ def _merge_violations_format(
                     tier=tier,
                     status="PASS",
                     severity="",
-                    decision_basis="absence_of_evidence",
+                    decision_basis="",
                     description="İhlal bulunmadı.",
                     line_reference="",
                     code_snippet="",
@@ -1184,7 +1190,7 @@ def parse_review_response(
             tier=tier,
             status="PASS",
             severity="",
-            decision_basis="absence_of_evidence",
+            decision_basis="",
             description="İhlal bulunmadı.",
             line_reference="",
             code_snippet="",
@@ -1343,6 +1349,18 @@ def _brief_llm_error_for_ui(msg: str) -> str:
         "LLM bağlantı hatası (ağ / adres). backend/.env (LLM_BASE_URL, LLM_CHAT_URL) ve LM Studio sunucu ayarlarını kontrol edin."
     )
 
+
+def _is_retryable_llm_transport_error(err_msg: str | None) -> bool:
+    """Geçici yük / sıra bekleme için yeniden denenebilir hatalar."""
+    if not (err_msg or "").strip():
+        return False
+    u = err_msg.lower()
+    return (
+        "readtimeout" in u
+        or "connecttimeout" in u
+        or "timed out" in u
+        or "zaman aşım" in u  # _llm_connect_error_hint (ReadTimeout)
+    )
 
 
 def _join_message_parts(parts: list) -> str | None:
@@ -1669,15 +1687,59 @@ async def _llm_chat_completion(
     progress: Any | None = None,
 ) -> tuple[str | None, str | None, dict[str, Any] | None]:
     """Başarı: (metin, None, usage_meta), hata: (None, mesaj, None)."""
-    if _resolved_llm_chat_api(settings) == "api_v1_chat":
-        return await _llm_chat_completion_api_v1(
-            client=client,
-            settings=settings,
-            user_content=user_content,
-            object_label=object_label,
-            rule_id=rule_id,
-            progress=progress,
-        )
+    extra = int(getattr(settings, "llm_request_retries", 2) or 0)
+    if extra < 0:
+        extra = 0
+    max_attempts = extra + 1
+    last: tuple[str | None, str | None, dict[str, Any] | None] = (
+        None,
+        "LLM yanıtı alınamadı.",
+        None,
+    )
+    for attempt in range(max_attempts):
+        if _resolved_llm_chat_api(settings) == "api_v1_chat":
+            last = await _llm_chat_completion_api_v1(
+                client=client,
+                settings=settings,
+                user_content=user_content,
+                object_label=object_label,
+                rule_id=rule_id,
+                progress=progress,
+            )
+        else:
+            last = await _llm_chat_completion_openai_stream(
+                client=client,
+                settings=settings,
+                user_content=user_content,
+                object_label=object_label,
+                rule_id=rule_id,
+                progress=progress,
+            )
+        text, err, _meta = last
+        if text is not None:
+            return last
+        if attempt + 1 < max_attempts and _is_retryable_llm_transport_error(err):
+            logger.warning(
+                "LLM yeniden deneme %s/%s: %s",
+                attempt + 2,
+                max_attempts,
+                (err or "")[:280],
+            )
+            await asyncio.sleep(min(1.5 * (2**attempt), 12.0))
+            continue
+        return last
+
+
+async def _llm_chat_completion_openai_stream(
+    *,
+    client: httpx.AsyncClient,
+    settings,
+    user_content: str,
+    object_label: str,
+    rule_id: str | None,
+    progress: Any | None = None,
+) -> tuple[str | None, str | None, dict[str, Any] | None]:
+    """OpenAI uyumlu …/chat/completions + stream=True."""
     url = _llm_chat_url(settings)
     payload = {
         "model": resolved_llm_model(settings),
@@ -2018,7 +2080,7 @@ async def review_sql(
     *,
     progress: Any | None = None,
 ) -> tuple[list[RuleCheckItem], list[ViolationItem], str | None]:
-    """Yayınlanmış her kural için ayrı LLM çağrısı; tüm kurallar paralel (ek sınır yok).
+    """Yayınlanmış her kural için ayrı LLM çağrısı; eşzamanlılık sql_review_max_concurrent_rules ile sınırlı.
 
     metadata_context: Veritabanı nesne incelemesinde doldurulur (bağımlılık + kolon özeti).
     None = getirilmedi (yapıştırılan SQL). Boş string = getirildi ama sonuç yok.
@@ -2041,9 +2103,16 @@ async def review_sql(
     sql_capped = sql_text[:120_000]
     numbered = _numbered_sql(sql_capped)
 
+    read_sec = float(getattr(settings, "llm_read_timeout_seconds", 900.0) or 900.0)
+    if read_sec < 60.0:
+        read_sec = 60.0
+    connect_sec = min(120.0, read_sec)
+
+    ua = (settings.llm_http_user_agent or "").strip() or "DWHCodeReview-Backend/1.0"
     async with httpx.AsyncClient(
-        timeout=httpx.Timeout(600.0, connect=120.0),
+        timeout=httpx.Timeout(read_sec, connect=connect_sec),
         trust_env=settings.llm_http_trust_env,
+        headers={"User-Agent": ua},
         limits=httpx.Limits(
             max_connections=5000,
             max_keepalive_connections=500,
@@ -2252,7 +2321,7 @@ async def review_sql(
             return rc_m, viol_m, warn_m
 
         max_concurrent = int(
-            getattr(settings, "sql_review_max_concurrent_rules", 32) or 32
+            getattr(settings, "sql_review_max_concurrent_rules", 6) or 6
         )
         if max_concurrent < 1:
             max_concurrent = 1

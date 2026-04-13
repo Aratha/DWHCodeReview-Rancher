@@ -8,12 +8,12 @@
       },
       {
         "id": "Kural08",
-        "text": "KURAL ADI: SCD_VALIDITY_FIELDS_USAGE\n\nAÇIKLAMA:\nSCD (Slowly Changing Dimension) tablolarında bir kaydın belirli bir andaki veya güncel halini bulmak için geçerlilik tarihleri ve aktiflik bayrağı birlikte yönetilmelidir.\n\nKURAL MANTIĞI:\n\nGeçmişe dönük (Point-in-time) analizlerde sorgulanan tarih parametresi BETWEEN EdwValidFrom AND EdwValidUntil aralığında olmalıdır.\n\nGüncel (en son) kayıt çekilirken ActiveFlag = 1 filtresi mutlaka kullanılmamalıdır (ActiveFlag kullanımı ihlaldir).\n\nİHLAL ÖRNEKLERİ:\n\nActiveFlag = 1\n\nİHLAL OLMAYAN DURUMLAR:\n\nWHERE @TargetDate BETWEEN EdwValidFrom AND EdwValidUntil\nWHERE GETDATE() BETWEEN EdwValidFrom AND EdwValidUntil",
+        "text": "KURAL ADI: SCD_VALIDITY_FIELDS_USAGE\n\nAÇIKLAMA:\nSCD (Slowly Changing Dimension) tablolarında bir kaydın belirli bir andaki veya güncel halini bulmak için geçerlilik tarihleri ve aktiflik bayrağı birlikte yönetilmelidir.\n\nKURAL MANTIĞI:\n\nGeçmişe dönük (Point-in-time) analizlerde sorgulanan tarih parametresi BETWEEN EdwValidFrom AND EdwValidUntil aralığında olmalıdır.\n\nGüncel (en son) kayıt çekilirken EdwStatus= 1 filtresi mutlaka kullanılmamalıdır (EdwStatuskullanımı ihlaldir).\n\nİHLAL ÖRNEKLERİ:\n\nEdwStatus= 1\n\nİHLAL OLMAYAN DURUMLAR:\n\nWHERE @TargetDate BETWEEN EdwValidFrom AND EdwValidUntil\nWHERE GETDATE() BETWEEN EdwValidFrom AND EdwValidUntil",
         "requires_metadata": false
       },
       {
         "id": "Kural09",
-        "text": "KURAL ADI: DM_VIEW_NK_ID_MAPPING\n\nAÇIKLAMA:\nDM (Data Mart) katmanındaki asıl view'larda son kullanıcıya veri ambarı teknik ID'leri gösterilmemelidir.\n\nKURAL MANTIĞI:\n\nView kolonları arasında Skid, SurrogateKey veya veri ambarına özgü teknik ID değerleri bulunmamalıdır.\n\nİş biriminin kullandığı Natural Key (NK) alanları, ID isimlendirmesiyle (alias) sunulmalıdır.\n\nİHLAL ÖRNEKLERİ:\n\nSELECT CustomerPartyId FROM DM.V_MUSTERI\n\nSELECT CustomerPartyNk FROM DM.V_MUSTERI (ID takma adı eksik)\n\nİHLAL OLMAYAN DURUMLAR:\n\nSELECT CustomerPartyNk AS CustomerId FROM DM.V_MUSTERI\n\nSELECT AbcNk AS AbcId FROM DM.V_MUSTERI",
+        "text": "KURAL ADI: DM_VIEW_NK_ID_MAPPING\n\nAÇIKLAMA:\nDM (Data Mart) katmanındaki asıl view'larda son kullanıcıya veri ambarı teknik ID'leri gösterilmemelidir.\n\nKURAL MANTIĞI:\n\nView kolonları arasında Skid, SurrogateKey veya veri ambarına özgü teknik ID değerleri bulunmamalıdır. Ama bu kural sadece VIEW objelerinde geçerli olmalıdır SP'lerde geçerli olmamalıdır. CustomerPartyId istisna olmalı.\n\nİş biriminin kullandığı Natural Key (NK) alanları, ID isimlendirmesiyle (alias) sunulmalıdır.\n\nİHLAL ÖRNEKLERİ:\n\nSELECT CustomerPartyId FROM DM.V_MUSTERI\n\nSELECT CustomerPartyNk FROM DM.V_MUSTERI (ID takma adı eksik)\n\nİHLAL OLMAYAN DURUMLAR:\n\nSELECT CustomerPartyNk AS CustomerId FROM DM.V_MUSTERI\n\nSELECT AbcNk AS AbcId FROM DM.V_MUSTERI",
         "requires_metadata": false
       },
       {
@@ -69,12 +69,12 @@
       },
       {
         "id": "Kural08",
-        "text": "KURAL ADI: SCD_VALIDITY_FIELDS_USAGE\n\nAÇIKLAMA:\nSCD (Slowly Changing Dimension) tablolarında bir kaydın belirli bir andaki veya güncel halini bulmak için geçerlilik tarihleri ve aktiflik bayrağı birlikte yönetilmelidir.\n\nKURAL MANTIĞI:\n\nGeçmişe dönük (Point-in-time) analizlerde sorgulanan tarih parametresi BETWEEN EdwValidFrom AND EdwValidUntil aralığında olmalıdır.\n\nGüncel (en son) kayıt çekilirken ActiveFlag = 1 filtresi mutlaka kullanılmamalıdır (ActiveFlag kullanımı ihlaldir).\n\nİHLAL ÖRNEKLERİ:\n\nActiveFlag = 1\n\nİHLAL OLMAYAN DURUMLAR:\n\nWHERE @TargetDate BETWEEN EdwValidFrom AND EdwValidUntil\nWHERE GETDATE() BETWEEN EdwValidFrom AND EdwValidUntil",
+        "text": "KURAL ADI: SCD_VALIDITY_FIELDS_USAGE\n\nAÇIKLAMA:\nSCD (Slowly Changing Dimension) tablolarında bir kaydın belirli bir andaki veya güncel halini bulmak için geçerlilik tarihleri ve aktiflik bayrağı birlikte yönetilmelidir.\n\nKURAL MANTIĞI:\n\nGeçmişe dönük (Point-in-time) analizlerde sorgulanan tarih parametresi BETWEEN EdwValidFrom AND EdwValidUntil aralığında olmalıdır.\n\nGüncel (en son) kayıt çekilirken EdwStatus= 1 filtresi mutlaka kullanılmamalıdır (EdwStatuskullanımı ihlaldir).\n\nİHLAL ÖRNEKLERİ:\n\nEdwStatus= 1\n\nİHLAL OLMAYAN DURUMLAR:\n\nWHERE @TargetDate BETWEEN EdwValidFrom AND EdwValidUntil\nWHERE GETDATE() BETWEEN EdwValidFrom AND EdwValidUntil",
         "requires_metadata": false
       },
       {
         "id": "Kural09",
-        "text": "KURAL ADI: DM_VIEW_NK_ID_MAPPING\n\nAÇIKLAMA:\nDM (Data Mart) katmanındaki asıl view'larda son kullanıcıya veri ambarı teknik ID'leri gösterilmemelidir.\n\nKURAL MANTIĞI:\n\nView kolonları arasında Skid, SurrogateKey veya veri ambarına özgü teknik ID değerleri bulunmamalıdır.\n\nİş biriminin kullandığı Natural Key (NK) alanları, ID isimlendirmesiyle (alias) sunulmalıdır.\n\nİHLAL ÖRNEKLERİ:\n\nSELECT CustomerPartyId FROM DM.V_MUSTERI\n\nSELECT CustomerPartyNk FROM DM.V_MUSTERI (ID takma adı eksik)\n\nİHLAL OLMAYAN DURUMLAR:\n\nSELECT CustomerPartyNk AS CustomerId FROM DM.V_MUSTERI\n\nSELECT AbcNk AS AbcId FROM DM.V_MUSTERI",
+        "text": "KURAL ADI: DM_VIEW_NK_ID_MAPPING\n\nAÇIKLAMA:\nDM (Data Mart) katmanındaki asıl view'larda son kullanıcıya veri ambarı teknik ID'leri gösterilmemelidir.\n\nKURAL MANTIĞI:\n\nView kolonları arasında Skid, SurrogateKey veya veri ambarına özgü teknik ID değerleri bulunmamalıdır. Ama bu kural sadece VIEW objelerinde geçerli olmalıdır SP'lerde geçerli olmamalıdır. CustomerPartyId istisna olmalı.\n\nİş biriminin kullandığı Natural Key (NK) alanları, ID isimlendirmesiyle (alias) sunulmalıdır.\n\nİHLAL ÖRNEKLERİ:\n\nSELECT CustomerPartyId FROM DM.V_MUSTERI\n\nSELECT CustomerPartyNk FROM DM.V_MUSTERI (ID takma adı eksik)\n\nİHLAL OLMAYAN DURUMLAR:\n\nSELECT CustomerPartyNk AS CustomerId FROM DM.V_MUSTERI\n\nSELECT AbcNk AS AbcId FROM DM.V_MUSTERI",
         "requires_metadata": false
       },
       {
@@ -121,5 +121,5 @@
       }
     ]
   },
-  "published_at": "2026-04-06T19:58:47Z"
+  "published_at": "2026-04-10T14:05:15Z"
 }

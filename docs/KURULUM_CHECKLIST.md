@@ -36,6 +36,7 @@ Notlar:
 - [ ] `LLM_MODEL` girildi
 - [ ] `SQL_REVIEW_LLM_MODEL` girildi
 - [ ] `LLM_HTTP_TRUST_ENV=false`
+- [ ] `LLM_HTTP_USER_AGENT` (isteğe bağlı; kurumsal log/DLP için)
 - [ ] `LLM_ENFORCE_PRIVATE_NETWORK=true`
 - [ ] `LLM_LOG_FULL_PAYLOADS=false`
 - [ ] `SQL_REVIEW_MAX_CONCURRENT_RULES=6` (veya kurum standardi)

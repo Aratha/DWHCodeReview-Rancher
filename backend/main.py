@@ -1,6 +1,10 @@
 import asyncio
+from collections import defaultdict, deque
 import json
 import logging
+import secrets
+import threading
+import time
 from contextlib import asynccontextmanager
 from datetime import date
 from pathlib import Path
@@ -35,6 +39,55 @@ from services.sql_fetcher import fetch_definition
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+_RATE_LIMIT_LOCK = threading.Lock()
+_RATE_LIMIT_HITS: dict[str, deque[float]] = defaultdict(deque)
+_ADMIN_PATH_PREFIXES = ("/api/rules", "/api/llm-config", "/api/llm-logs")
+_REVIEW_RATE_LIMIT_PREFIXES = (
+    "/api/review",
+    "/api/object-definition",
+)
+
+
+def _public_error_detail(status_code: int) -> str:
+    if status_code == 400:
+        return "Invalid request."
+    if status_code == 401:
+        return "Unauthorized."
+    if status_code == 404:
+        return "Not found."
+    if status_code == 503:
+        return "Service temporarily unavailable."
+    return "Internal server error."
+
+
+def _request_client_ip(request: Request) -> str:
+    xff = (request.headers.get("x-forwarded-for") or "").strip()
+    if xff:
+        return xff.split(",")[0].strip()
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def _is_admin_path(path: str) -> bool:
+    return any(path.startswith(p) for p in _ADMIN_PATH_PREFIXES)
+
+
+def _is_review_rate_limited_path(path: str) -> bool:
+    return any(path.startswith(p) for p in _REVIEW_RATE_LIMIT_PREFIXES)
+
+
+def _allow_review_request(client_key: str, window_seconds: int, max_hits: int) -> bool:
+    now = time.monotonic()
+    cutoff = now - float(window_seconds)
+    with _RATE_LIMIT_LOCK:
+        q = _RATE_LIMIT_HITS[client_key]
+        while q and q[0] < cutoff:
+            q.popleft()
+        if len(q) >= max_hits:
+            return False
+        q.append(now)
+        return True
 
 
 @asynccontextmanager
@@ -70,19 +123,47 @@ app.add_middleware(
 
 @app.middleware("http")
 async def api_key_guard(request: Request, call_next):
-    """API_ACCESS_TOKEN tanımlıysa /api uçlarını X-API-Key ile koru."""
+    """API_ACCESS_TOKEN tanımlıysa /api uçlarını X-API-Key ile koru.
+    API_ADMIN_TOKEN tanımlıysa yönetim uçlarında ayrıca X-Admin-Key iste.
+    """
     path = request.url.path or ""
     if not path.startswith("/api"):
         return await call_next(request)
     if path == "/api/health":
         return await call_next(request)
 
-    token = (get_settings().api_access_token or "").strip()
+    s = get_settings()
+    token = (s.api_access_token or "").strip()
     if token:
         got = (request.headers.get("x-api-key") or "").strip()
-        if got != token:
+        if not got or not secrets.compare_digest(got, token):
             raise HTTPException(status_code=401, detail="Unauthorized")
+    admin_token = (s.api_admin_token or "").strip()
+    if admin_token and _is_admin_path(path):
+        got_admin = (request.headers.get("x-admin-key") or "").strip()
+        if not got_admin or not secrets.compare_digest(got_admin, admin_token):
+            raise HTTPException(status_code=403, detail="Forbidden")
+
+    if s.api_rate_limit_enabled and _is_review_rate_limited_path(path):
+        client_key = _request_client_ip(request)
+        if not _allow_review_request(
+            client_key=client_key,
+            window_seconds=max(1, int(s.api_rate_limit_window_seconds)),
+            max_hits=max(1, int(s.api_rate_limit_review_max)),
+        ):
+            raise HTTPException(status_code=429, detail="Too Many Requests")
     return await call_next(request)
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    resp = await call_next(request)
+    if request.url.path.startswith("/api"):
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        resp.headers["X-Frame-Options"] = "DENY"
+        resp.headers["Referrer-Policy"] = "no-referrer"
+        resp.headers.setdefault("Cache-Control", "no-store")
+    return resp
 
 
 @app.get("/")
@@ -114,10 +195,11 @@ def get_databases():
     try:
         return {"databases": list_databases()}
     except ValueError as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        logger.warning("Failed to list databases: %s", e)
+        raise HTTPException(status_code=503, detail=_public_error_detail(503)) from e
     except Exception as e:
         logger.exception("Failed to list databases")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=_public_error_detail(500)) from e
 
 
 @app.get("/api/objects", response_model=list[DbObjectRow])
@@ -132,10 +214,11 @@ def get_objects(
     try:
         return list_objects(database=database, filter_query=q, from_date=from_date)
     except ValueError as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        logger.warning("Failed to list objects: %s", e)
+        raise HTTPException(status_code=503, detail=_public_error_detail(503)) from e
     except Exception as e:
         logger.exception("Failed to list objects")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=_public_error_detail(500)) from e
 
 
 @app.get("/api/rules", response_model=RulesState)
@@ -200,10 +283,11 @@ async def post_review(body: ReviewRequest):
         results = await run_reviews(body.selections, body.database)
         return ReviewResponse(results=results)
     except ValueError as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        logger.warning("Review validation error: %s", e)
+        raise HTTPException(status_code=503, detail=_public_error_detail(503)) from e
     except Exception as e:
         logger.exception("Review failed")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=_public_error_detail(500)) from e
 
 
 @app.post("/api/review/stream")
@@ -235,12 +319,13 @@ async def post_review_stream(body: ReviewRequest):
                         }
                     )
             except ValueError as e:
-                await q.put({"phase": "error", "message": str(e)})
+                logger.warning("Review stream validation error: %s", e)
+                await q.put({"phase": "error", "message": _public_error_detail(503)})
             except asyncio.CancelledError:
                 raise
             except Exception as e:
                 logger.exception("Review stream failed")
-                await q.put({"phase": "error", "message": str(e)})
+                await q.put({"phase": "error", "message": _public_error_detail(500)})
             finally:
                 try:
                     await q.put(None)
@@ -283,10 +368,11 @@ async def post_review_script(body: ScriptReviewRequest):
         result = await review_pasted_sql(sql, body.label)
         return ReviewResponse(results=[result])
     except ValueError as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        logger.warning("Script review validation error: %s", e)
+        raise HTTPException(status_code=503, detail=_public_error_detail(503)) from e
     except Exception as e:
         logger.exception("Script review failed")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=_public_error_detail(500)) from e
 
 
 @app.post("/api/review/script/stream")
@@ -315,12 +401,13 @@ async def post_review_script_stream(body: ScriptReviewRequest):
                     }
                 )
             except ValueError as e:
-                await q.put({"phase": "error", "message": str(e)})
+                logger.warning("Script review stream validation error: %s", e)
+                await q.put({"phase": "error", "message": _public_error_detail(503)})
             except asyncio.CancelledError:
                 raise
             except Exception as e:
                 logger.exception("Script review stream failed")
-                await q.put({"phase": "error", "message": str(e)})
+                await q.put({"phase": "error", "message": _public_error_detail(500)})
             finally:
                 try:
                     await q.put(None)
@@ -369,7 +456,8 @@ def post_object_definition(body: ObjectDefinitionRequest):
         sql = fetch_definition(body.schema, body.name, tc, body.database)
         return ObjectDefinitionResponse(sql=sql)
     except ValueError as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        logger.warning("Object definition fetch validation error: %s", e)
+        raise HTTPException(status_code=503, detail=_public_error_detail(503)) from e
     except Exception as e:
         logger.exception("Object definition fetch failed")
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail=_public_error_detail(500)) from e
