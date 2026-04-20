@@ -82,6 +82,7 @@ flowchart LR
 | **Son kullanıcı** | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) | Günlük inceleme, menüler, dışa aktarma |
 | **Sistem yöneticisi** | Bu README + [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md) | Kurulum, LLM, güvenlik, EDR/DLP, proxy |
 | **Operasyon / IT** | [docs/KURULUM_CHECKLIST.md](docs/KURULUM_CHECKLIST.md) | Teslim onayı, yazdırılabilir kontrol listesi |
+| **Docker (yerel)** | [docs/DOCKER.md](docs/DOCKER.md) | `docker compose` ile backend + ön yüz |
 
 Arayüzde sol menüde **Kullanıcı** ve **Sistem** bölümleri ayrıdır; ağır sayfalar ihtiyaca göre yüklenir.
 
