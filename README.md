@@ -27,6 +27,16 @@ Frontend, `/api` isteklerini cluster icindeki `backend` servisine yonlendirir.
 
 Detayli adimlar icin: `k8s/README.md`.
 
+## Helm ile Kurulum
+
+Helm chart hazirdir:
+
+```powershell
+helm upgrade --install dwh-code-review ./helm/dwh-code-review --namespace dwh-code-review --create-namespace
+```
+
+Detayli chart kullanimi: `helm/dwh-code-review/README.md`.
+
 ## Ortam Degiskenleri
 
 Backend tum ayarlari Kubernetes `ConfigMap` ve `Secret` kaynaklarindan alir:

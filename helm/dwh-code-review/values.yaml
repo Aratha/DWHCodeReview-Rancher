@@ -1,0 +1,77 @@
+nameOverride: ""
+fullnameOverride: ""
+
+backend:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/aratha/dwh-code-review-backend
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  service:
+    type: ClusterIP
+    port: 8000
+
+web:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/aratha/dwh-code-review-web
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  service:
+    type: ClusterIP
+    port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "20m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+  hosts:
+    - host: dwh.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+backendConfig:
+  LLM_CHAT_API: "api_v1_chat"
+  LLM_BASE_URL: "http://llm-service.ai.svc.cluster.local:1234/v1"
+  LLM_CHAT_URL: ""
+  LLM_MODEL: "openai/gpt-oss-120b"
+  SQL_REVIEW_LLM_MODEL: "openai/gpt-oss-120b"
+  LLM_HTTP_TRUST_ENV: "false"
+  LLM_ENFORCE_PRIVATE_NETWORK: "true"
+  LLM_ALLOW_PUBLIC_HOSTS: ""
+  LLM_LOG_FULL_PAYLOADS: "false"
+  SQL_REVIEW_MAX_CONCURRENT_RULES: "6"
+  LLM_READ_TIMEOUT_SECONDS: "900"
+  LLM_REQUEST_RETRIES: "2"
+  SQL_REVIEW_TWO_PART_THRESHOLD_CHARS: "45000"
+  CORS_ORIGINS: "https://dwh.example.com"
+  API_RATE_LIMIT_ENABLED: "true"
+  API_RATE_LIMIT_WINDOW_SECONDS: "60"
+  API_RATE_LIMIT_REVIEW_MAX: "30"
+
+backendSecret:
+  create: true
+  name: ""
+  data:
+    MSSQL_CONNECTION_STRING: "Driver={ODBC Driver 18 for SQL Server};Server=sqlserver,1433;Database=YourDb;Trusted_Connection=yes;Encrypt=yes;TrustServerCertificate=yes;"
+    LLM_API_KEY: ""
+    API_ACCESS_TOKEN: ""
+    API_ADMIN_TOKEN: ""
