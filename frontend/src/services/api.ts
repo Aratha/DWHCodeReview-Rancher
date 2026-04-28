@@ -1,7 +1,7 @@
 /**
- * Geliştirmede varsayılan: doğrudan FastAPI (Vite proxy güvenilir olmayabilir).
- * Üretim: aynı origin veya VITE_API_PREFIX ile tam taban URL.
- * VITE_API_PREFIX sonunda `/api` olmamalı (yoksa `/api/api/...` oluşur ve 404 verir).
+ * Rancher dagitiminda varsayilan API yolu ayni origin altindaki `/api` olur.
+ * Gerekirse VITE_API_PREFIX ile farkli host verilebilir.
+ * VITE_API_PREFIX sonunda `/api` olmamali (aksi halde `/api/api/...` olur).
  */
 function normalizeApiBase(raw: string): string {
   let s = raw.trim().replace(/\/+$/, '')
@@ -15,9 +15,6 @@ function apiBase(): string {
   const explicit = import.meta.env.VITE_API_PREFIX
   if (explicit != null && String(explicit).trim() !== '') {
     return normalizeApiBase(String(explicit))
-  }
-  if (import.meta.env.DEV) {
-    return 'http://127.0.0.1:8000'
   }
   return ''
 }
@@ -84,17 +81,13 @@ export type RulesState = {
 }
 
 const STALE_BACKEND_MSG =
-  'Sunucu bu API yolunu tanımıyor (404). Genelde güncellenmiş backend kodu çalışmıyordur ' +
-  '(eski uvicorn süreci). Süreci durdurup yeniden başlatın: proje kökünde ' +
-  '`python run_backend.py` veya backend klasöründe ' +
-  '`python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000`'
+  'Sunucu bu API yolunu tanimiyor (404). Genelde Ingress/Service rotasi veya backend deployment surumu guncel degildir. ' +
+  'Deployment ve servis eslesmelerini kontrol edin.'
 
 /** /api/health yanıtında rules_api yoksa porttaki süreç kurallar öncesi kodu çalıştırıyordur. */
 const RULES_404_STALE_PROCESS_MSG =
-  '8000 portunda dinleyen süreç güncel değil: bu API sürümünde /api/health içinde "rules_api": true olmalı. ' +
-  'Genelde eski uvicorn arka planda kalmıştır. PowerShell: netstat -ano | findstr :8000 ile PID bulun, ' +
-  'Görev Yöneticisinde o işlemi sonlandırın; sonra proje kökünde `python run_backend.py` çalıştırın. ' +
-  'Doğrulama: tarayıcıda http://127.0.0.1:8000/ açıp JSON içinde "rules":"/api/rules" satırını görmelisiniz.'
+  '/api/rules 404 donuyor ancak /api/health yanit veriyor. Bu durumda backend surumu eski olabilir veya deployment rollback olmus olabilir. ' +
+  'Backend rollout durumunu ve aktif image etiketini kontrol edin.'
 
 function parseApiErrorText(status: number, text: string): string {
   if (status === 404) {

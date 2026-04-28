@@ -1,117 +1,37 @@
-# DWHCodeReview Kurulum Checklist (PDF Hazir)
+# Rancher Kurulum Checklist
 
-Bu dokuman IT/operasyon ekipleri icin kurulum-onay formu olarak tasarlanmistir.
+## 1) Registry
 
----
+- [ ] Backend image push edildi
+- [ ] Web image push edildi
+- [ ] Manifestlerde image adlari guncel
 
-## A) Sistem Bilgileri
+## 2) Konfigurasyon
 
-- Sunucu/Makine Adi: ........................................
-- Isletim Sistemi: ..........................................
-- Kurulum Tarihi: ...........................................
-- Kurulumu Yapan: ...........................................
+- [ ] `backend-configmap.yaml` ortama gore duzenlendi
+- [ ] `backend-secret.yaml` olusturuldu
+- [ ] `MSSQL_CONNECTION_STRING` dogru
+- [ ] `LLM_BASE_URL` veya `LLM_CHAT_URL` dogru
+- [ ] `CORS_ORIGINS` ingress host ile uyumlu
 
----
+## 3) Kubernetes Kaynaklari
 
-## B) Onkosul Kontrolu
+- [ ] Namespace olustu
+- [ ] Backend deployment hazir
+- [ ] Web deployment hazir
+- [ ] Service endpointleri olustu
+- [ ] Ingress hazir
 
-- [ ] Python 3.10+ kurulu
-- [ ] Node.js 18+ kurulu
-- [ ] npm calisiyor
-- [ ] ODBC Driver 17/18 kurulu
-- [ ] SQL Server erisimi mevcut
-- [ ] LLM endpoint erisimi mevcut
+## 4) Fonksiyonel Dogrulama
 
-Notlar:
-- ................................................................
-- ................................................................
+- [ ] `/api/health` 200 donuyor
+- [ ] UI aciliyor
+- [ ] Veritabani listeleme calisiyor
+- [ ] Inceleme tetiklenebiliyor
+- [ ] Sonuc exportlari calisiyor
 
----
+## 5) Guvenlik
 
-## C) Konfigurasyon Kontrolu (`backend/.env`)
-
-- [ ] `MSSQL_CONNECTION_STRING` girildi
-- [ ] `LLM_CHAT_API` dogru secildi (`api_v1_chat` / `openai`)
-- [ ] `LLM_BASE_URL` veya `LLM_CHAT_URL` girildi
-- [ ] `LLM_MODEL` girildi
-- [ ] `SQL_REVIEW_LLM_MODEL` girildi
-- [ ] `LLM_HTTP_TRUST_ENV=false`
-- [ ] `LLM_HTTP_USER_AGENT` (isteğe bağlı; kurumsal log/DLP için)
 - [ ] `LLM_ENFORCE_PRIVATE_NETWORK=true`
 - [ ] `LLM_LOG_FULL_PAYLOADS=false`
-- [ ] `SQL_REVIEW_MAX_CONCURRENT_RULES=6` (veya kurum standardi)
-- [ ] `API_ACCESS_TOKEN` (gerekiyorsa) girildi
-
----
-
-## D) Kurulum ve Baslatma
-
-- [ ] README’deki komutlarla backend ve frontend başlatıldı
-- [ ] Backend ayaga kalkti (`/api/health`)
-- [ ] Frontend ayaga kalkti (`http://localhost:5173`)
-- [ ] Port 8000 dinlemede
-- [ ] Port 5173 dinlemede
-
----
-
-## E) Fonksiyonel Test
-
-- [ ] Veritabani listesi geliyor
-- [ ] Nesne secimi yapilabiliyor
-- [ ] Inceleme baslatilabiliyor
-- [ ] Canli ilerleme ekrani geliyor
-- [ ] Sonuc modalinda kural kartlari gorunuyor
-- [ ] `CSV indir` calisiyor
-- [ ] `SQL indir` calisiyor
-- [ ] SQL dosyasi basinda duzeltme yorum blogu var
-
----
-
-## F) Guvenlik Testi
-
-- [ ] LLM hedefi private/Tailscale aginda
-- [ ] Public/cloud cikis engeli dogrulandi
-- [ ] API key korumasi beklenen sekilde calisiyor
-- [ ] Loglarda hassas payload tutulmuyor
-- [ ] CORS sadece izinli originler
-
----
-
-## G) Hata Durumu Kaydi
-
-- Hata var mi?: [ ] Yok  [ ] Var
-- Hata Ozeti:
-  - ................................................................
-  - ................................................................
-- Alinan Aksiyon:
-  - ................................................................
-  - ................................................................
-
----
-
-## H) Onay
-
-- Kurulum Sonucu: [ ] Basarili  [ ] Kosullu Basarili  [ ] Basarisiz
-- Teknik Onay Veren: ........................................
-- Is Birimi Onayi: ...........................................
-- Tarih: ....................................................
-
----
-
-## Ek: Hizli Komutlar
-
-```powershell
-# Backend (proje kokunden, bir terminal)
-# .\backend\.venv\Scripts\python.exe -m uvicorn main:app --app-dir .\backend --host 127.0.0.1 --port 8000 --reload
-
-# Frontend (baska terminal, frontend klasorunde)
-# npm run dev
-
-# Backend health
-Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/api/health
-
-# Port kontrol
-netstat -ano | findstr :8000
-netstat -ano | findstr :5173
-```
-
+- [ ] API/Admin token aktif

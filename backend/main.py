@@ -269,7 +269,7 @@ def get_llm_config():
 
 @app.put("/api/llm-config", response_model=LlmConfigResponse)
 def put_llm_config(body: LlmConfigUpdate):
-    """backend/.env içindeki LLM alanlarını günceller; süreç içi ayarlar anında uygulanır."""
+    """LLM ayarlarini gunceller; surec ici ayarlar aninda uygulanir."""
     patch = body.model_dump(exclude_unset=True)
     merge_llm_into_dotenv(patch)
     return read_llm_snapshot()

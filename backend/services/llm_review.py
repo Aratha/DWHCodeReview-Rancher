@@ -1310,14 +1310,14 @@ def _llm_connect_error_hint(
         return (
             f"{msg} — TCP bağlantısı kurulamadı (hedef: {url}). "
             "Yerel LLM (LM Studio, Ollama vb.) çalışıyor mu ve bu adres/port doğru mu kontrol edin; "
-            "gerekirse backend/.env içinde LLM_BASE_URL veya LLM_CHAT_URL güncelleyin. "
+            "gerekirse ortam degiskenlerinde LLM_BASE_URL veya LLM_CHAT_URL guncelleyin. "
             "LLM başka makinedeyse güvenlik duvarı ve sunucunun uygun arayüzde dinlemesi gerekir."
         )
 
     trust = bool(getattr(settings, "llm_http_trust_env", False)) if settings is not None else False
     return (
         f"{msg} — Hedef: {url}. HTTP(S)_PROXY ortam değişkeni tanımlı; istekler proxy üzerinden gidebilir. "
-        "Doğrudan LLM’e gitmek için NO_PROXY’de LLM host’unu ekleyin veya backend/.env içinde LLM_HTTP_TRUST_ENV ile "
+        "Doğrudan LLM’e gitmek için NO_PROXY’de LLM host’unu ekleyin veya LLM_HTTP_TRUST_ENV ile "
         f"proxy kullanımını yönetin (şu an trust_env={trust}). Uzaktan LLM için güvenlik duvarı ve dinleme adresi (0.0.0.0) kontrol edin."
     )
 
@@ -1342,11 +1342,11 @@ def _brief_llm_error_for_ui(msg: str) -> str:
     if target:
         return (
             f"LLM bağlantı hatası ({target}). "
-            "LM Studio çalışıyor mu, backend/.env içinde LLM_CHAT_URL doğru mu kontrol edin; "
+            "LM Studio çalışıyor mu, LLM_CHAT_URL doğru mu kontrol edin; "
             "LLM_HTTP_TRUST_ENV=false (LAN IP), güvenlik duvarı ve LM Studio’nun 0.0.0.0 üzerinde dinlemesi."
         )
     return (
-        "LLM bağlantı hatası (ağ / adres). backend/.env (LLM_BASE_URL, LLM_CHAT_URL) ve LM Studio sunucu ayarlarını kontrol edin."
+        "LLM bağlantı hatası (ağ / adres). LLM_BASE_URL, LLM_CHAT_URL ve LM Studio sunucu ayarlarını kontrol edin."
     )
 
 

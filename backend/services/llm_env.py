@@ -1,4 +1,4 @@
-"""backend/.env içinde LLM anahtarlarını okur/yazar; os.environ güncellenir."""
+"""LLM ortam anahtarlarini okur/yazar; os.environ guncellenir."""
 
 from __future__ import annotations
 

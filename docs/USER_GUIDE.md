@@ -1,33 +1,16 @@
-# Son Kullanıcı Kılavuzu
+# User Guide
 
-Bu uygulamayı günlük işinizde kullanmak için yeterli bilgidir; sunucu veya LLM kurulumu gerekmez.
+Uygulama Rancher uzerinden yayinlanan URL uzerinden kullanilir.
 
-## Ne işe yarar?
+## Tipik Kullanim
 
-Veritabanındaki procedure/view/function nesnelerini seçip kurallara göre otomatik inceler; aynı şekilde elinizdeki SQL metnini de yapıştırarak inceletebilirsiniz.
+1. Inceleme sayfasina gir.
+2. Veritabani ve nesne sec.
+3. Incelemeyi baslat.
+4. Sonuclari gozden gecir.
+5. CSV/SQL export al.
 
-## Menü (Kullanıcı bölümü)
+## Sorun Durumlari
 
-| Menü | Açıklama |
-|------|----------|
-| **İnceleme** | Veritabanı ve nesne seçerek inceleme başlatın. |
-| **SQL yapıştır** | Nesne seçmeden SQL betiğini yapıştırın. |
-| **Analiz geçmişi** | Daha önce tamamlanan analizlere kısa süreli bakın. |
-
-## Tipik akış
-
-1. **İnceleme** sekmesinde veritabanını seçin, nesneleri arayıp işaretleyin, incelemeyi başlatın.
-2. Canlı pencerede kural kartlarını izleyin; bitince sonuçları açın.
-3. İsterseniz **CSV**, **JSON**, **HTML** veya **SQL** olarak dışa aktarın.
-4. Yanlış pozitif gördüğünüz satırları işaretleyin; rapor buna göre güncellenir.
-
-## Dışa aktarılan SQL dosyası
-
-İndirilen `.sql` dosyasının başında, düzeltilmesi gereken satırlar ve kurallar kısa bir yorum bloğunda özetlenir; altında tam nesne tanımı yer alır.
-
-## Sorun yaşarsanız
-
-- Sayfa veri getirmiyorsa: ağ bağlantınızı ve tarayıcı konsolunu kontrol edin.
-- İnceleme takılıyorsa: sistem yöneticisine bildirin (LLM veya veritabanı tarafı olabilir).
-
-Daha fazla ayrıntı için ana `README.md` dosyasına bakın.
+- Sayfa acilmiyorsa sistem yoneticisine Ingress ve pod durumunu kontrol ettir.
+- Inceleme takilirsa backend loglari ve LLM baglantisi kontrol edilir.

@@ -91,10 +91,10 @@ export function LlmConfigPage() {
         <p className="mt-1 max-w-2xl text-xs text-zinc-500 dark:text-zinc-400">
           OpenAI uyumlu uç nokta (LM Studio, vLLM vb.) ve model adları. Değerler{' '}
           <code className="rounded bg-zinc-200/80 px-1 py-0.5 text-[11px] text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
-            backend/.env
+            backend ayarlari
           </code>{' '}
-          dosyasına yazılır; çalışan API sürecinde hemen kullanılır (yeniden başlatma
-          gerekmez).
+          olarak uygulanir; Kubernetes ortaminizda kalici olmasi icin Secret/ConfigMap ile
+          da esitlenmelidir.
         </p>
       </header>
 
@@ -151,8 +151,8 @@ export function LlmConfigPage() {
               onChange={(e) => setLlmBaseUrl(e.target.value)}
               placeholder={
                 llm_chat_api === 'api_v1_chat'
-                  ? 'http://127.0.0.1:1234 veya http://127.0.0.1:1234/v1'
-                  : 'http://127.0.0.1:1234/v1'
+                  ? 'http://llm-service.ai.svc.cluster.local:1234 veya .../v1'
+                  : 'http://llm-service.ai.svc.cluster.local:1234/v1'
               }
               autoComplete="off"
               spellCheck={false}
@@ -167,7 +167,7 @@ export function LlmConfigPage() {
               ) : (
                 <>
                   Sonunda <code className="text-zinc-600 dark:text-zinc-400">/v1</code> olmalı (örn. LM Studio:{' '}
-                  <code className="text-zinc-600 dark:text-zinc-400">http://127.0.0.1:1234/v1</code>).
+                  <code className="text-zinc-600 dark:text-zinc-400">http://llm-service.ai.svc.cluster.local:1234/v1</code>).
                 </>
               )}
             </p>
@@ -193,7 +193,7 @@ export function LlmConfigPage() {
             />
             <p className="mt-1 text-[11px] text-zinc-500">
               {llm_chat_api === 'api_v1_chat'
-                ? 'Özel yol gerekiyorsa tam adresi yazın (örn. http://host:1234/api/v1/chat).'
+                ? 'Ozel yol gerekiyorsa tam adresi yazin (orn. http://llm-service.ai.svc.cluster.local:1234/api/v1/chat).'
                 : 'Yalnızca .../v1 yazdıysanız tam yol otomatik tamamlanır. Aksi halde tam OpenAI uyumlu adresi girin.'}
             </p>
           </div>

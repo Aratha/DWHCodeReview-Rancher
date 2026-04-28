@@ -24,8 +24,8 @@ def get_connection(database: str | None = None) -> pyodbc.Connection:
     if not settings.mssql_connection_string.strip():
         raise ValueError(
             "MSSQL_CONNECTION_STRING is empty or missing. "
-            "Copy backend/.env.example to backend/.env and set MSSQL_CONNECTION_STRING "
-            "to your ODBC connection string, then restart the API."
+            "Set MSSQL_CONNECTION_STRING in your Kubernetes Secret/ConfigMap "
+            "and restart the backend deployment."
         )
     conn_str = (
         connection_string_with_database(
