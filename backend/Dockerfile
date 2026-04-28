@@ -1,5 +1,5 @@
 # SQL Server (pyodbc) için Microsoft ODBC Driver 18 — Debian 12 tabanlı resmi Python imajı
-FROM python:3.12-bookworm-slim
+FROM python:3.12-slim-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ca-certificates gnupg \
