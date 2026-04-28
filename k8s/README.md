@@ -13,20 +13,22 @@ Bu klasor, uygulamayi Rancher uzerinde calistirmak icin temel Kubernetes manifes
 
 ## 1) Image'lari build/push et
 
-Asagidaki image adlarini kendi registry'nize gore duzenleyin:
+Varsayilan registry: GitHub Container Registry (GHCR):
 
-- `REGISTRY/dwh-code-review-backend:latest`
-- `REGISTRY/dwh-code-review-web:latest`
+- `ghcr.io/aratha/dwh-code-review-backend:latest`
+- `ghcr.io/aratha/dwh-code-review-web:latest`
 
 Ornek:
 
 ```powershell
-docker build -t REGISTRY/dwh-code-review-backend:latest ./backend
-docker push REGISTRY/dwh-code-review-backend:latest
+docker build -t ghcr.io/aratha/dwh-code-review-backend:latest ./backend
+docker push ghcr.io/aratha/dwh-code-review-backend:latest
 
-docker build -t REGISTRY/dwh-code-review-web:latest ./frontend
-docker push REGISTRY/dwh-code-review-web:latest
+docker build -t ghcr.io/aratha/dwh-code-review-web:latest ./frontend
+docker push ghcr.io/aratha/dwh-code-review-web:latest
 ```
+
+Not: Bu makinede Docker daemon kapaliysa image push icin GitHub Actions workflow'unu kullanin.
 
 ## 2) Secret dosyasini hazirla
 

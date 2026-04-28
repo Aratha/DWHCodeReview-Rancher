@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: REGISTRY/dwh-code-review-web:latest
+          image: ghcr.io/aratha/dwh-code-review-web:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80

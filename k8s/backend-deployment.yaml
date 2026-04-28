@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: REGISTRY/dwh-code-review-backend:latest
+          image: ghcr.io/aratha/dwh-code-review-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
