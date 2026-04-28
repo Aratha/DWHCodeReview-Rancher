@@ -1,6 +1,10 @@
 nameOverride: ""
 fullnameOverride: ""
 
+imagePullSecrets: []
+# imagePullSecrets:
+#   - name: ghcr-pull-secret
+
 backend:
   replicaCount: 1
   image:

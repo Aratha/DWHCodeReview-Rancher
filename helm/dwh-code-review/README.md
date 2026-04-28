@@ -30,6 +30,25 @@ backendSecret:
   name: existing-backend-secret
 ```
 
+## Private Registry (imagePullSecrets)
+
+Private registry kullanacaksaniz namespace icinde pull secret olusturun:
+
+```powershell
+kubectl -n dwh-code-review create secret docker-registry ghcr-pull-secret `
+  --docker-server=ghcr.io `
+  --docker-username=<github-username> `
+  --docker-password=<github-token> `
+  --docker-email=<email>
+```
+
+Sonra Helm values icinde aktif edin:
+
+```yaml
+imagePullSecrets:
+  - name: ghcr-pull-secret
+```
+
 ## Dry Run
 
 ```powershell

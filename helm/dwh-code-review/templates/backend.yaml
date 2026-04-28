@@ -12,6 +12,10 @@ spec:
       labels:
         app: {{ include "dwh-code-review.backend.fullname" . }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+      {{- end }}
       containers:
         - name: backend
           image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
